@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import Modal from "../components/Modal";
 import { useAuth } from "../context/AuthContext";
 
+// AuthContext/Reports jaisa hi API_ROOT
+const API_ROOT =
+  import.meta.env.VITE_API_ROOT || "https://ppms-server.onrender.com";
+
 export default function DoctorPatientDetail() {
   const { id: patientId } = useParams();
   const { authFetch } = useAuth();
@@ -50,7 +54,7 @@ export default function DoctorPatientDetail() {
     setReportsError("");
     try {
       const res = await authFetch(
-        `http://localhost:5000/api/reports/user/${patientId}`
+        `${API_ROOT}/api/reports/user/${patientId}`
       );
       const data = await res.json();
       if (!res.ok) {
@@ -82,7 +86,7 @@ export default function DoctorPatientDetail() {
   // ===== File download (new backend) =====
   const handleDownload = (report) => {
     if (report.filePath) {
-      const url = `http://localhost:5000/${report.filePath}`;
+      const url = `${API_ROOT}/${report.filePath}`;
       window.open(url, "_blank");
     } else {
       alert("File not available");
@@ -120,13 +124,10 @@ export default function DoctorPatientDetail() {
         formData.append("notes", createForm.notes.trim());
       }
 
-      const res = await authFetch(
-        "http://localhost:5000/api/reports/upload",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+      const res = await authFetch(`${API_ROOT}/api/reports/upload`, {
+        method: "POST",
+        body: formData,
+      });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || "Failed to upload report");
@@ -532,7 +533,7 @@ export default function DoctorPatientDetail() {
             <p style={{ fontSize: "12px", color: "#6b7280" }}>
               {formatDate(selectedReport.createdAt)} •{" "}
               {selectedReport.uploadedBy?.name
-                ? `${selectedReport.uploadedBy.name} (${selectedReport.uploadedBy.role})`
+                ? `${selectedReport.uploadedBy.name} (${selectedReport.role})`
                 : "Unknown uploader"}
             </p>
             {selectedReport.notes && (
@@ -550,7 +551,7 @@ export default function DoctorPatientDetail() {
             >
               {selectedReport.filePath ? (
                 <iframe
-                  src={`http://localhost:5000/${selectedReport.filePath}`}
+                  src={`${API_ROOT}/${selectedReport.filePath}`}
                   title={selectedReport.title || selectedReport.fileName}
                   style={{
                     width: "100%",

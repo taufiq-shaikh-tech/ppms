@@ -1,343 +1,304 @@
 // src/pages/Appointments.jsx
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+
+const API_ROOT =
+  import.meta.env.VITE_API_ROOT || "https://ppms-server-3.onrender.com";
 
 export default function Appointments() {
-  const { authFetch, user } = useAuth();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
   const [appointments, setAppointments] = useState([]);
-  const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
 
   const [form, setForm] = useState({
-    doctorId: "",
     date: "",
-    time: "",
+    doctor: "",
     reason: "",
   });
+
+  const STATIC_DOCTORS = [
+    {
+      id: "dr_sharma_cardio",
+      name: "Dr. Rajesh Sharma",
+      specialization: "Cardiologist",
+      department: "Cardiology",
+      hospital: "City Heart Care",
+    },
+    {
+      id: "dr_verma_neuro",
+      name: "Dr. Neha Verma",
+      specialization: "Neurologist",
+      department: "Neurology",
+      hospital: "NeuroPlus Hospital",
+    },
+    {
+      id: "dr_singh_ortho",
+      name: "Dr. Amit Singh",
+      specialization: "Orthopedic Surgeon",
+      department: "Orthopedics",
+      hospital: "OrthoCare Clinic",
+    },
+    {
+      id: "dr_khan_pedia",
+      name: "Dr. Sana Khan",
+      specialization: "Pediatrician",
+      department: "Pediatrics",
+      hospital: "Children's Health Centre",
+    },
+  ];
+
+  useEffect(() => {
+    const today = new Date();
+    const format = (d) => d.toISOString().slice(0, 10);
+
+    const a1 = new Date(today);
+    a1.setDate(a1.getDate() + 1);
+    const a2 = new Date(today);
+    a2.setDate(a2.getDate() + 3);
+
+    const initial = [
+      {
+        _id: "apt1",
+        date: format(a1),
+        time: "10:30 AM",
+        patient: { name: user?.name || "You" },
+        doctorId: STATIC_DOCTORS[0].id,
+        reason: "Routine heart checkup",
+        status: "confirmed",
+      },
+      {
+        _id: "apt2",
+        date: format(a2),
+        time: "04:00 PM",
+        patient: { name: user?.name || "You" },
+        doctorId: STATIC_DOCTORS[1].id,
+        reason: "Migraine follow-up",
+        status: "pending",
+      },
+    ];
+
+    setAppointments(initial);
+    setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const loadAppointments = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await authFetch("http://localhost:5000/api/appointments/my");
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to load appointments");
-      }
-      setAppointments(data);
-    } catch (err) {
-      setError(err.message || "Failed to load appointments");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadDoctors = async () => {
-    if (user?.role !== "patient") return;
-    try {
-      const res = await authFetch("http://localhost:5000/api/users/doctors");
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to load doctors");
-      }
-      setDoctors(data);
-    } catch (err) {
-      console.error("Load doctors error", err);
-    }
-  };
-
-  useEffect(() => {
-    loadAppointments();
-    loadDoctors();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleCreate = async (e) => {
+  const handleCreate = (e) => {
     e.preventDefault();
-    setError("");
     setCreating(true);
+    setError("");
 
     try {
-      if (!form.doctorId || !form.date || !form.time || !form.reason) {
-        throw new Error("All fields are required");
-      }
+      const newAppt = {
+        _id: `local_${Date.now()}`,
+        date: form.date,
+        time: "11:00 AM",
+        patient: { name: user?.name || "You" },
+        doctorId: form.doctor,
+        reason: form.reason || "General consultation",
+        status: "pending",
+      };
 
-      const isoDate = new Date(`${form.date}T${form.time}:00`);
-
-      const res = await authFetch("http://localhost:5000/api/appointments", {
-        method: "POST",
-        body: JSON.stringify({
-          doctor: form.doctorId,
-          date: isoDate.toISOString(),
-          reason: form.reason,
-        }),
+      setAppointments((prev) => [...prev, newAppt]);
+      setForm({
+        date: "",
+        doctor: "",
+        reason: "",
       });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to create appointment");
-      }
-
-      setForm({ doctorId: "", date: "", time: "", reason: "" });
-      loadAppointments();
     } catch (err) {
-      setError(err.message || "Failed to create appointment");
+      setError("Failed to create appointment (local)");
     } finally {
       setCreating(false);
     }
   };
 
+  const getDoctor = (id) =>
+    STATIC_DOCTORS.find((doc) => doc.id === id) || null;
+
+  const getDoctorDisplayShort = (id) => {
+    const d = getDoctor(id);
+    if (!d) return "-";
+    return d.name;
+  };
+
+  const getDoctorDisplayFull = (id) => {
+    const d = getDoctor(id);
+    if (!d) return "-";
+    const parts = [d.name];
+    if (d.specialization) parts.push(d.specialization);
+    if (d.department) parts.push(d.department);
+    if (d.hospital) parts.push(d.hospital);
+    return parts.join(" • ");
+  };
+
+  const handleMessageDoctor = (doctorId) => {
+    const d = getDoctor(doctorId);
+    navigate("/patient/messages", {
+      state: {
+        doctorId,
+        doctorName: d ? d.name : "Doctor",
+      },
+    });
+  };
+
   return (
-    <div style={{ padding: "16px 20px", color: "#e5e7eb" }}>
-      <h1 style={{ fontSize: "20px", marginBottom: "12px" }}>
-        Appointments ({user?.role})
-      </h1>
+    <div>
+      <h1 className="page-title">Appointments</h1>
+      <p className="page-subtitle">
+        View your upcoming visits and quickly contact your doctor if needed.
+      </p>
 
       {error && (
-        <p style={{ color: "#fecaca", fontSize: "13px", marginBottom: "8px" }}>
+        <p
+          style={{ color: "#b91c1c", fontSize: 13, marginBottom: 6 }}
+        >
           {error}
         </p>
       )}
 
-      {/* Create appointment form – visible only for patients */}
       {user?.role === "patient" && (
-        <div
-          style={{
-            background: "#020617",
-            borderRadius: "12px",
-            padding: "14px 16px",
-            marginBottom: "16px",
-            border: "1px solid #1f2937",
-          }}
-        >
-          <h2
-            style={{
-              fontSize: "15px",
-              marginBottom: "10px",
-              color: "#f9fafb",
-            }}
-          >
-            Book a new appointment
-          </h2>
+        <div className="section" style={{ marginBottom: 16 }}>
+          <h3 style={{ marginTop: 0, marginBottom: 8, fontSize: 15 }}>
+            Book new appointment
+          </h3>
 
           <form
             onSubmit={handleCreate}
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 8,
+            }}
           >
-            <div>
-              <label style={{ fontSize: "12px" }}>
-                Doctor
-                <select
-                  name="doctorId"
-                  value={form.doctorId}
-                  onChange={handleChange}
-                  style={{
-                    width: "100%",
-                    marginTop: 4,
-                    padding: "6px 8px",
-                    borderRadius: 999,
-                    border: "1px solid #4b5563",
-                    fontSize: "12px",
-                    background: "#020617",
-                    color: "#e5e7eb",
-                  }}
-                >
-                  <option value="">Select a doctor</option>
-                  {doctors.map((doc) => (
-                    <option key={doc._id} value={doc._id}>
-                      {doc.name} ({doc.email})
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
+            <input
+              type="date"
+              name="date"
+              value={form.date}
+              onChange={handleChange}
+              required
+              className="input"
+              style={{
+                minWidth: "min(100%, 140px)",
+                flexGrow: 1,
+              }}
+            />
 
-            <div>
-              <label style={{ fontSize: "12px" }}>
-                Date
-                <input
-                  name="date"
-                  type="date"
-                  value={form.date}
-                  onChange={handleChange}
-                  style={{
-                    width: "100%",
-                    marginTop: 4,
-                    padding: "6px 8px",
-                    borderRadius: 999,
-                    border: "1px solid #4b5563",
-                    fontSize: "12px",
-                    background: "#020617",
-                    color: "#e5e7eb",
-                  }}
-                />
-              </label>
-            </div>
+            <select
+              name="doctor"
+              value={form.doctor}
+              onChange={handleChange}
+              required
+              className="select"
+              style={{
+                minWidth: "min(100%, 220px)",
+                flexGrow: 2,
+                backgroundColor: "white",
+              }}
+            >
+              <option value="">Select doctor</option>
+              {STATIC_DOCTORS.map((doc) => (
+                <option key={doc.id} value={doc.id}>
+                  {getDoctorDisplayFull(doc.id)}
+                </option>
+              ))}
+            </select>
 
-            <div>
-              <label style={{ fontSize: "12px" }}>
-                Time
-                <input
-                  name="time"
-                  type="time"
-                  value={form.time}
-                  onChange={handleChange}
-                  style={{
-                    width: "100%",
-                    marginTop: 4,
-                    padding: "6px 8px",
-                    borderRadius: 999,
-                    border: "1px solid #4b5563",
-                    fontSize: "12px",
-                    background: "#020617",
-                    color: "#e5e7eb",
-                  }}
-                />
-              </label>
-            </div>
+            <input
+              type="text"
+              name="reason"
+              placeholder="Reason (optional)"
+              value={form.reason}
+              onChange={handleChange}
+              className="input"
+              style={{
+                flexGrow: 3,
+                minWidth: "min(100%, 160px)",
+              }}
+            />
 
-            <div>
-              <label style={{ fontSize: "12px" }}>
-                Reason
-                <input
-                  name="reason"
-                  value={form.reason}
-                  onChange={handleChange}
-                  placeholder="Short description"
-                  style={{
-                    width: "100%",
-                    marginTop: 4,
-                    padding: "6px 8px",
-                    borderRadius: 999,
-                    border: "1px solid #4b5563",
-                    fontSize: "12px",
-                    background: "#020617",
-                    color: "#e5e7eb",
-                  }}
-                />
-              </label>
-            </div>
-
-            <div style={{ gridColumn: "1 / -1", textAlign: "right" }}>
-              <button
-                type="submit"
-                disabled={creating}
-                style={{
-                  padding: "7px 16px",
-                  borderRadius: 999,
-                  border: "none",
-                  background: creating
-                    ? "#4b5563"
-                    : "linear-gradient(90deg,#0f66d1,#1d4ed8)",
-                  color: "#f9fafb",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  cursor: creating ? "not-allowed" : "pointer",
-                }}
-              >
-                {creating ? "Booking..." : "Book appointment"}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={creating}
+              className="btn btn-primary"
+            >
+              {creating ? "Booking..." : "Book appointment"}
+            </button>
           </form>
         </div>
       )}
 
-      {/* Appointments list */}
-      <div
-        style={{
-          background: "#020617",
-          borderRadius: "12px",
-          padding: "14px 16px",
-          border: "1px solid #1f2937",
-        }}
-      >
-        <h2
-          style={{
-            fontSize: "15px",
-            marginBottom: "10px",
-            color: "#f9fafb",
-          }}
-        >
-          My appointments
-        </h2>
-
+      <div className="section">
+        <h3 style={{ marginTop: 0, marginBottom: 8, fontSize: 15 }}>
+          {user?.role === "doctor"
+            ? "Appointments with your patients"
+            : "Your upcoming appointments"}
+        </h3>
         {loading ? (
-          <p style={{ fontSize: "13px" }}>Loading...</p>
+          <p style={{ fontSize: 12, color: "#6b7280" }}>Loading...</p>
         ) : appointments.length === 0 ? (
-          <p style={{ fontSize: "13px", opacity: 0.7 }}>
+          <p style={{ fontSize: 12, color: "#6b7280" }}>
             No appointments yet.
           </p>
         ) : (
-          <table
-            style={{
-              width: "100%",
-              fontSize: "12px",
-              borderCollapse: "collapse",
-            }}
-          >
-            <thead>
-              <tr
-                style={{
-                  textAlign: "left",
-                  borderBottom: "1px solid #1f2937",
-                }}
-              >
-                <th style={{ padding: "6px 4px" }}>Date</th>
-                <th style={{ padding: "6px 4px" }}>Doctor</th>
-                <th style={{ padding: "6px 4px" }}>Patient</th>
-                <th style={{ padding: "6px 4px" }}>Reason</th>
-                <th style={{ padding: "6px 4px" }}>Status</th>
-                <th style={{ padding: "6px 4px" }}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {appointments.map((a) => (
-                <tr
-                  key={a._id}
-                  style={{ borderBottom: "1px solid #0f172a" }}
-                >
-                  <td style={{ padding: "6px 4px" }}>
-                    {new Date(a.date).toLocaleString()}
-                  </td>
-                  <td style={{ padding: "6px 4px" }}>{a.doctor?.name}</td>
-                  <td style={{ padding: "6px 4px" }}>{a.patient?.name}</td>
-                  <td style={{ padding: "6px 4px" }}>{a.reason}</td>
-                  <td
-                    style={{
-                      padding: "6px 4px",
-                      textTransform: "capitalize",
-                    }}
-                  >
-                    {a.status}
-                  </td>
-                  <td style={{ padding: "6px 4px" }}>
-                    {user?.role === "patient" && a.doctor?._id && (
-                      <a
-                        href={`/patient/messages?with=${a.doctor._id}`}
+          <div className="table-responsive">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Doctor</th>
+                  <th>Reason</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {appointments.map((a) => (
+                  <tr key={a._id}>
+                    <td>{a.date}</td>
+                    <td>{a.time || "-"}</td>
+                    <td>{getDoctorDisplayShort(a.doctorId)}</td>
+                    <td>{a.reason}</td>
+                    <td
+                      style={{
+                        textTransform: "capitalize",
+                        color:
+                          a.status === "confirmed"
+                            ? "#16a34a"
+                            : a.status === "cancelled"
+                            ? "#b91c1c"
+                            : "#92400e",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {a.status || "pending"}
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        onClick={() => handleMessageDoctor(a.doctorId)}
+                        className="btn btn-outline"
                         style={{
-                          fontSize: "11px",
-                          padding: "4px 8px",
-                          borderRadius: 999,
-                          border: "1px solid #1d4ed8",
-                          color: "#bfdbfe",
-                          textDecoration: "none",
-                          background: "rgba(37,99,235,0.1)",
+                          padding: "4px 10px",
+                          fontSize: 11,
                         }}
                       >
                         Message doctor
-                      </a>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

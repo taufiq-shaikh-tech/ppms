@@ -2,6 +2,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
+// Common API root
+const API_ROOT =
+  import.meta.env.VITE_API_ROOT || "https://ppms-server.onrender.com";
+
 export default function AdminMessages() {
   const { authFetch, user } = useAuth();
 
@@ -20,7 +24,7 @@ export default function AdminMessages() {
     setLoadingThreads(true);
     setError("");
     try {
-      const res = await authFetch("http://localhost:5000/api/messages/threads");
+      const res = await authFetch(`${API_ROOT}/api/messages/threads`);
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || "Failed to load conversations");
@@ -49,7 +53,7 @@ export default function AdminMessages() {
     setError("");
     try {
       const res = await authFetch(
-        `http://localhost:5000/api/messages/conversation/${otherUserId}`
+        `${API_ROOT}/api/messages/conversation/${otherUserId}`
       );
       const data = await res.json();
       if (!res.ok) {
@@ -57,12 +61,9 @@ export default function AdminMessages() {
       }
       setMessages(data);
 
-      await authFetch(
-        `http://localhost:5000/api/messages/read/${otherUserId}`,
-        {
-          method: "POST",
-        }
-      );
+      await authFetch(`${API_ROOT}/api/messages/read/${otherUserId}`, {
+        method: "POST",
+      });
 
       setThreads((prev) =>
         prev.map((t) =>
@@ -102,7 +103,7 @@ export default function AdminMessages() {
     setNewMessage("");
 
     try {
-      const res = await authFetch("http://localhost:5000/api/messages", {
+      const res = await authFetch(`${API_ROOT}/api/messages`, {
         method: "POST",
         body: JSON.stringify({
           recipient: selectedUserId,
@@ -181,7 +182,9 @@ export default function AdminMessages() {
       </p>
 
       {error && (
-        <p style={{ color: "#b91c1c", fontSize: "13px", marginBottom: "6px" }}>
+        <p
+          style={{ color: "#b91c1c", fontSize: "13px", marginBottom: "6px" }}
+        >
           {error}
         </p>
       )}
@@ -204,7 +207,13 @@ export default function AdminMessages() {
               alignItems: "center",
             }}
           >
-            <h3 style={{ marginTop: 0, marginBottom: 0, fontSize: "15px" }}>
+            <h3
+              style={{
+                marginTop: 0,
+                marginBottom: 0,
+                fontSize: "15px",
+              }}
+            >
               Conversations
             </h3>
             <button

@@ -1,5 +1,9 @@
+// src/pages/AdminDashboard.jsx
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+
+const API_ROOT =
+  import.meta.env.VITE_API_ROOT || "https://ppms-server.onrender.com";
 
 export default function AdminDashboard() {
   const { authFetch } = useAuth();
@@ -8,10 +12,10 @@ export default function AdminDashboard() {
   const [error, setError] = useState("");
 
   const stats = {
-    totalPatients: 320,
-    totalDoctors: 18,
-    todayAppointments: 54,
-    pendingReports: 12,
+    totalPatients: 3,
+    totalDoctors: 4,
+    todayAppointments: 2,
+    pendingReports: 1,
   };
 
   const latestUsers = [
@@ -44,7 +48,8 @@ export default function AdminDashboard() {
       patient: "Rahul Patil",
       againstDoctor: "Dr. Arjun Mehta",
       category: "Behaviour",
-      summary: "Doctor was in a hurry and did not explain the report properly.",
+      summary:
+        "Doctor was in a hurry and did not explain the report properly.",
       status: "Open",
     },
     {
@@ -62,7 +67,7 @@ export default function AdminDashboard() {
     setLoadingAppointments(true);
     setError("");
     try {
-      const res = await authFetch("http://localhost:5000/api/appointments/all");
+      const res = await authFetch(`${API_ROOT}/api/appointments/all`);
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || "Failed to load appointments");
@@ -86,33 +91,34 @@ export default function AdminDashboard() {
       <div
         style={{
           background: "linear-gradient(135deg,#0f66d1,#1d4ed8)",
-          borderRadius: "24px",
+          borderRadius: 24,
           padding: "18px 22px",
           color: "white",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          gap: "18px",
+          gap: 18,
           boxShadow: "0 18px 40px rgba(15,23,42,0.35)",
-          marginBottom: "18px",
+          marginBottom: 18,
+          flexWrap: "wrap",
         }}
       >
-        <div>
-          <div style={{ fontSize: "13px", opacity: 0.9 }}>Admin panel</div>
+        <div style={{ minWidth: 220, flex: 1 }}>
+          <div style={{ fontSize: 13, opacity: 0.9 }}>Admin panel</div>
           <h1
             style={{
-              fontSize: "22px",
-              fontWeight: "700",
+              fontSize: 22,
+              fontWeight: 700,
               margin: "2px 0 6px",
             }}
           >
-            Synopsis – Hospital Management Overview
+            Sun-Fibo - Overview
           </h1>
           <p
             style={{
-              fontSize: "12px",
+              fontSize: 12,
               opacity: 0.9,
-              maxWidth: "420px",
+              maxWidth: 420,
             }}
           >
             Monitor patients, doctors, appointments, reports and complaints from
@@ -123,13 +129,13 @@ export default function AdminDashboard() {
         <div
           style={{
             padding: "10px 14px",
-            borderRadius: "18px",
+            borderRadius: 18,
             background: "rgba(15,23,42,0.25)",
-            fontSize: "12px",
-            minWidth: "210px",
+            fontSize: 12,
+            minWidth: 210,
           }}
         >
-          <div style={{ fontWeight: 600, marginBottom: "4px" }}>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>
             Today&apos;s summary
           </div>
           <div style={{ opacity: 0.9 }}>
@@ -144,7 +150,9 @@ export default function AdminDashboard() {
 
       {/* Error global (mainly for appointments) */}
       {error && (
-        <p style={{ color: "#fecaca", fontSize: "13px", marginBottom: "8px" }}>
+        <p
+          style={{ color: "#fecaca", fontSize: 13, marginBottom: 8 }}
+        >
           {error}
         </p>
       )}
@@ -174,37 +182,37 @@ export default function AdminDashboard() {
         style={{
           display: "grid",
           gridTemplateColumns: "1.4fr 1.6fr",
-          gap: "16px",
-          marginTop: "18px",
+          gap: 16,
+          marginTop: 18,
         }}
       >
         {/* Latest users */}
         <div className="section">
-          <h3 style={{ marginTop: 0, marginBottom: "8px" }}>Latest users</h3>
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              fontSize: "12px",
-            }}
-          >
-            <thead>
-              <tr style={{ textAlign: "left", color: "#6b7280" }}>
-                <th style={{ padding: "8px 4px" }}>Name</th>
-                <th style={{ padding: "8px 4px" }}>Role</th>
-                <th style={{ padding: "8px 4px" }}>Joined</th>
-              </tr>
-            </thead>
-            <tbody>
-              {latestUsers.map((u) => (
-                <tr key={u.id} style={{ borderTop: "1px solid #e5e7eb" }}>
-                  <td style={{ padding: "8px 4px" }}>{u.name}</td>
-                  <td style={{ padding: "8px 4px" }}>{u.role}</td>
-                  <td style={{ padding: "8px 4px" }}>{u.created}</td>
+          <h3 style={{ marginTop: 0, marginBottom: 8, fontSize: 15 }}>
+            Latest users
+          </h3>
+          <div className="table-responsive">
+            <table
+              className="table"
+            >
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Role</th>
+                  <th>Joined</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {latestUsers.map((u) => (
+                  <tr key={u.id}>
+                    <td>{u.name}</td>
+                    <td>{u.role}</td>
+                    <td>{u.created}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Recent appointments + pending reports */}
@@ -212,164 +220,154 @@ export default function AdminDashboard() {
           style={{
             display: "grid",
             gridTemplateRows: "1fr 1fr",
-            gap: "12px",
+            gap: 12,
           }}
         >
           <div className="section">
-            <h3 style={{ marginTop: 0, marginBottom: "8px" }}>
+            <h3 style={{ marginTop: 0, marginBottom: 8, fontSize: 15 }}>
               Recent appointments
             </h3>
 
             {loadingAppointments ? (
-              <p style={{ fontSize: "12px", color: "#6b7280" }}>Loading...</p>
+              <p style={{ fontSize: 12, color: "#6b7280" }}>Loading...</p>
             ) : appointments.length === 0 ? (
-              <p style={{ fontSize: "12px", color: "#6b7280" }}>
+              <p style={{ fontSize: 12, color: "#6b7280" }}>
                 No appointments found.
               </p>
             ) : (
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  fontSize: "12px",
-                }}
-              >
-                <thead>
-                  <tr style={{ textAlign: "left", color: "#6b7280" }}>
-                    <th style={{ padding: "6px 4px" }}>Date</th>
-                    <th style={{ padding: "6px 4px" }}>Patient</th>
-                    <th style={{ padding: "6px 4px" }}>Doctor</th>
-                    <th style={{ padding: "6px 4px" }}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {appointments.slice(0, 5).map((a) => (
-                    <tr key={a._id} style={{ borderTop: "1px solid #e5e7eb" }}>
-                      <td style={{ padding: "6px 4px" }}>
-                        {new Date(a.date).toLocaleString()}
-                      </td>
-                      <td style={{ padding: "6px 4px" }}>{a.patient?.name}</td>
-                      <td style={{ padding: "6px 4px" }}>{a.doctor?.name}</td>
-                      <td
-                        style={{
-                          padding: "6px 4px",
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        {a.status}
-                      </td>
+              <div className="table-responsive">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Patient</th>
+                      <th>Doctor</th>
+                      <th>Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {appointments.slice(0, 5).map((a) => (
+                      <tr key={a._id}>
+                        <td>{new Date(a.date).toLocaleString()}</td>
+                        <td>{a.patient?.name}</td>
+                        <td>{a.doctor?.name}</td>
+                        <td style={{ textTransform: "capitalize" }}>
+                          {a.status}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
 
           <div className="section">
-            <h3 style={{ marginTop: 0, marginBottom: "8px" }}>
+            <h3 style={{ marginTop: 0, marginBottom: 8, fontSize: 15 }}>
               Pending reports
             </h3>
             {pendingReports.length === 0 ? (
-              <p style={{ fontSize: "12px", color: "#6b7280" }}>
+              <p style={{ fontSize: 12, color: "#6b7280" }}>
                 No pending reports at the moment.
               </p>
             ) : (
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  fontSize: "12px",
-                }}
-              >
-                <thead>
-                  <tr style={{ textAlign: "left", color: "#6b7280" }}>
-                    <th style={{ padding: "6px 4px" }}>Patient</th>
-                    <th style={{ padding: "6px 4px" }}>Doctor</th>
-                    <th style={{ padding: "6px 4px" }}>Report type</th>
-                    <th style={{ padding: "6px 4px" }}>Requested</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pendingReports.map((r) => (
-                    <tr key={r.id} style={{ borderTop: "1px solid #e5e7eb" }}>
-                      <td style={{ padding: "6px 4px" }}>{r.patient}</td>
-                      <td style={{ padding: "6px 4px" }}>{r.doctor}</td>
-                      <td style={{ padding: "6px 4px" }}>{r.type}</td>
-                      <td style={{ padding: "6px 4px" }}>{r.requested}</td>
+              <div className="table-responsive">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Patient</th>
+                      <th>Doctor</th>
+                      <th>Report type</th>
+                      <th>Requested</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {pendingReports.map((r) => (
+                      <tr key={r.id}>
+                        <td>{r.patient}</td>
+                        <td>{r.doctor}</td>
+                        <td>{r.type}</td>
+                        <td>{r.requested}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
       </div>
 
       {/* Complaints section */}
-      <div style={{ marginTop: "18px" }} className="section">
-        <h3 style={{ marginTop: 0, marginBottom: "8px" }}>
+      <div style={{ marginTop: 18 }} className="section">
+        <h3 style={{ marginTop: 0, marginBottom: 8, fontSize: 15 }}>
           Recent complaints about doctors
         </h3>
         {complaints.length === 0 ? (
-          <p style={{ fontSize: "12px", color: "#6b7280" }}>
+          <p style={{ fontSize: 12, color: "#6b7280" }}>
             No complaints have been submitted.
           </p>
         ) : (
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              fontSize: "12px",
-            }}
-          >
-            <thead>
-              <tr style={{ textAlign: "left", color: "#6b7280" }}>
-                <th style={{ padding: "8px 4px" }}>Date</th>
-                <th style={{ padding: "8px 4px" }}>Patient</th>
-                <th style={{ padding: "8px 4px" }}>Doctor</th>
-                <th style={{ padding: "8px 4px" }}>Category</th>
-                <th style={{ padding: "8px 4px" }}>Summary</th>
-                <th style={{ padding: "8px 4px" }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {complaints.map((c) => (
-                <tr key={c.id} style={{ borderTop: "1px solid #e5e7eb" }}>
-                  <td style={{ padding: "8px 4px" }}>{c.date}</td>
-                  <td style={{ padding: "8px 4px" }}>{c.patient}</td>
-                  <td style={{ padding: "8px 4px" }}>{c.againstDoctor}</td>
-                  <td style={{ padding: "8px 4px" }}>{c.category}</td>
-                  <td
-                    style={{
-                      padding: "8px 4px",
-                      maxWidth: "260px",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {c.summary}
-                  </td>
-                  <td
-                    style={{
-                      padding: "8px 4px",
-                      color:
-                        c.status === "Open"
-                          ? "#b91c1c"
-                          : c.status === "In review"
-                          ? "#b45309"
-                          : "#15803d",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {c.status}
-                  </td>
+          <div className="table-responsive">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Patient</th>
+                  <th>Doctor</th>
+                  <th>Category</th>
+                  <th>Summary</th>
+                  <th>Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {complaints.map((c) => (
+                  <tr key={c.id}>
+                    <td>{c.date}</td>
+                    <td>{c.patient}</td>
+                    <td>{c.againstDoctor}</td>
+                    <td>{c.category}</td>
+                    <td
+                      style={{
+                        maxWidth: 260,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {c.summary}
+                    </td>
+                    <td
+                      style={{
+                        color:
+                          c.status === "Open"
+                            ? "#b91c1c"
+                            : c.status === "In review"
+                            ? "#b45309"
+                            : "#15803d",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {c.status}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
+
+      {/* Mobile: stack middle columns */}
+      <style>
+        {`
+          @media (max-width: 900px) {
+            .admin-middle-grid {
+              grid-template-columns: 1fr !important;
+            }
+          }
+        `}
+      </style>
     </div>
   );
 }

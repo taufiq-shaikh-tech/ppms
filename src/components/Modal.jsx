@@ -11,6 +11,8 @@ export default function Modal({ title, open, onClose, children }) {
         alignItems: "center",
         justifyContent: "center",
         zIndex: 50,
+        padding: "12px", // mobile ke liye thoda breathing space
+        boxSizing: "border-box",
       }}
       onClick={onClose}
     >
@@ -50,7 +52,13 @@ export default function Modal({ title, open, onClose, children }) {
             ×
           </button>
         </div>
-        <div style={{ padding: "12px 16px", flex: 1, overflow: "auto" }}>
+        <div
+          style={{
+            padding: "12px 16px",
+            flex: 1,
+            overflow: "auto",
+          }}
+        >
           {children}
         </div>
       </div>

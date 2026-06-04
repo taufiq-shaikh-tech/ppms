@@ -3,6 +3,10 @@ import { useEffect, useState } from "react";
 import Modal from "../components/Modal";
 import { useAuth } from "../context/AuthContext";
 
+// AuthContext.jsx me jo API_ROOT use kiya hai, wahi URL yahan bhi use karenge
+const API_ROOT =
+  import.meta.env.VITE_API_ROOT || "https://ppms-server.onrender.com";
+
 export default function Reports() {
   const { authFetch, user } = useAuth();
   const [reports, setReports] = useState([]);
@@ -24,7 +28,7 @@ export default function Reports() {
     setError("");
     try {
       const res = await authFetch(
-        `http://localhost:5000/api/reports/user/${patientId}`
+        `${API_ROOT}/api/reports/user/${patientId}`
       );
       const data = await res.json();
       if (!res.ok) {
@@ -45,7 +49,7 @@ export default function Reports() {
 
   const handleDownload = (report) => {
     if (report.filePath) {
-      const url = `http://localhost:5000/${report.filePath}`;
+      const url = `${API_ROOT}/${report.filePath}`;
       window.open(url, "_blank");
     } else {
       alert("File not available");
@@ -73,13 +77,10 @@ export default function Reports() {
       if (title) formData.append("title", title);
       if (notes) formData.append("notes", notes);
 
-      const res = await authFetch(
-        "http://localhost:5000/api/reports/upload",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+      const res = await authFetch(`${API_ROOT}/api/reports/upload`, {
+        method: "POST",
+        body: formData,
+      });
 
       const data = await res.json();
       if (!res.ok) {
@@ -104,11 +105,14 @@ export default function Reports() {
     <div>
       <h1 className="page-title">Medical Reports</h1>
       <p className="page-subtitle">
-        Upload and view your medical reports. Your doctors can also add reports here.
+        Upload and view your medical reports. Your doctors can also add reports
+        here.
       </p>
 
       {error && (
-        <p style={{ color: "#b91c1c", fontSize: "13px", marginBottom: "6px" }}>
+        <p
+          style={{ color: "#b91c1c", fontSize: "13px", marginBottom: "6px" }}
+        >
           {error}
         </p>
       )}
@@ -122,7 +126,12 @@ export default function Reports() {
 
         <form
           onSubmit={handleUpload}
-          style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            marginTop: 8,
+          }}
         >
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <input
@@ -261,7 +270,9 @@ export default function Reports() {
       <Modal
         open={!!selectedReport}
         onClose={() => setSelectedReport(null)}
-        title={selectedReport ? selectedReport.title || selectedReport.fileName : ""}
+        title={
+          selectedReport ? selectedReport.title || selectedReport.fileName : ""
+        }
       >
         {selectedReport && (
           <div>
@@ -287,7 +298,7 @@ export default function Reports() {
             >
               {selectedReport.filePath ? (
                 <iframe
-                  src={`http://localhost:5000/${selectedReport.filePath}`}
+                  src={`${API_ROOT}/${selectedReport.filePath}`}
                   title={selectedReport.title || selectedReport.fileName}
                   style={{
                     width: "100%",

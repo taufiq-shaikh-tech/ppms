@@ -30,50 +30,52 @@ export default function DoctorDashboard() {
       <div
         style={{
           background: "linear-gradient(135deg,#0f66d1,#1d4ed8)",
-          borderRadius: "24px",
+          borderRadius: 24,
           padding: "20px 22px",
           color: "white",
           display: "flex",
           justifyContent: "space-between",
-          gap: "18px",
+          gap: 18,
           boxShadow: "0 18px 40px rgba(15,23,42,0.35)",
-          marginBottom: "18px",
+          marginBottom: 18,
+          flexWrap: "wrap",          // allow wrap on small screens
         }}
       >
-        <div style={{ display: "flex", gap: "14px", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 14, alignItems: "center", minWidth: 0, flex: 1 }}>
           <div
             style={{
-              width: "72px",
-              height: "72px",
+              width: 72,
+              height: 72,
               borderRadius: "50%",
               background: "rgba(255,255,255,0.18)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "30px",
-              fontWeight: "700",
+              fontSize: 30,
+              fontWeight: 700,
+              flexShrink: 0,
             }}
           >
             {doctorInfo.name.charAt(0)}
           </div>
-          <div>
-            <div style={{ fontSize: "13px", opacity: 0.9 }}>Doctor</div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 13, opacity: 0.9 }}>Doctor</div>
             <h1
               style={{
-                fontSize: "22px",
-                fontWeight: "700",
+                fontSize: 22,
+                fontWeight: 700,
                 margin: "0 0 4px",
               }}
             >
               {doctorInfo.name}
             </h1>
-            <div style={{ fontSize: "12px", opacity: 0.9 }}>
+            <div style={{ fontSize: 12, opacity: 0.9 }}>
               {doctorInfo.specialization} • {doctorInfo.qualification}
             </div>
-            <div style={{ fontSize: "12px", opacity: 0.9, marginTop: "4px" }}>
+            <div style={{ fontSize: 12, opacity: 0.9, marginTop: 4 }}>
               Experience: {doctorInfo.experience}
             </div>
-            <div style={{ fontSize: "12px", opacity: 0.9 }}>
+            <div style={{ fontSize: 12, opacity: 0.9 }}>
               {doctorInfo.hospital}
             </div>
           </div>
@@ -82,13 +84,14 @@ export default function DoctorDashboard() {
         <div
           style={{
             padding: "10px 14px",
-            borderRadius: "18px",
+            borderRadius: 18,
             background: "rgba(15,23,42,0.25)",
-            fontSize: "12px",
-            minWidth: "210px",
+            fontSize: 12,
+            minWidth: 210,
+            flexShrink: 0,
           }}
         >
-          <div style={{ fontWeight: 600, marginBottom: "4px" }}>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>
             Today&apos;s summary
           </div>
           <div style={{ opacity: 0.9 }}>
@@ -100,13 +103,13 @@ export default function DoctorDashboard() {
             to="/doctor/patients"
             style={{
               display: "inline-block",
-              marginTop: "6px",
+              marginTop: 6,
               padding: "6px 10px",
-              borderRadius: "999px",
+              borderRadius: 999,
               border: "1px solid rgba(255,255,255,0.9)",
               color: "white",
               textDecoration: "none",
-              fontSize: "11px",
+              fontSize: 11,
             }}
           >
             View all patients
@@ -136,11 +139,12 @@ export default function DoctorDashboard() {
 
       {/* Bottom grid: Today appointments + patients list preview */}
       <div
+        className="doctor-bottom-grid"
         style={{
           display: "grid",
           gridTemplateColumns: "1.5fr 1.5fr",
-          gap: "16px",
-          marginTop: "18px",
+          gap: 16,
+          marginTop: 18,
         }}
       >
         {/* Today appointments table */}
@@ -149,48 +153,47 @@ export default function DoctorDashboard() {
             style={{
               display: "flex",
               justifyContent: "space-between",
-              marginBottom: "8px",
+              marginBottom: 8,
+              gap: 8,
+              alignItems: "center",
             }}
           >
-            <h3 style={{ margin: 0, fontSize: "16px" }}>Today&apos;s Appointments</h3>
+            <h3 style={{ margin: 0, fontSize: 16 }}>Today&apos;s Appointments</h3>
             <Link
               to="/doctor/appointments"
               style={{
-                fontSize: "12px",
+                fontSize: 12,
                 color: "#0f66d1",
                 textDecoration: "none",
+                whiteSpace: "nowrap",
               }}
             >
               View schedule
             </Link>
           </div>
 
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              fontSize: "12px",
-            }}
-          >
-            <thead>
-              <tr style={{ textAlign: "left", color: "#6b7280" }}>
-                <th style={{ padding: "6px 4px" }}>Time</th>
-                <th style={{ padding: "6px 4px" }}>Patient</th>
-                <th style={{ padding: "6px 4px" }}>Reason</th>
-                <th style={{ padding: "6px 4px" }}>Room</th>
-              </tr>
-            </thead>
-            <tbody>
-              {todayAppointments.map((a) => (
-                <tr key={a.id} style={{ borderTop: "1px solid #e5e7eb" }}>
-                  <td style={{ padding: "6px 4px" }}>{a.time}</td>
-                  <td style={{ padding: "6px 4px" }}>{a.patient}</td>
-                  <td style={{ padding: "6px 4px" }}>{a.reason}</td>
-                  <td style={{ padding: "6px 4px" }}>{a.room}</td>
+          <div className="table-responsive">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Patient</th>
+                  <th>Reason</th>
+                  <th>Room</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {todayAppointments.map((a) => (
+                  <tr key={a.id}>
+                    <td>{a.time}</td>
+                    <td>{a.patient}</td>
+                    <td>{a.reason}</td>
+                    <td>{a.room}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Patients preview + quick links */}
@@ -199,16 +202,19 @@ export default function DoctorDashboard() {
             style={{
               display: "flex",
               justifyContent: "space-between",
-              marginBottom: "8px",
+              marginBottom: 8,
+              gap: 8,
+              alignItems: "center",
             }}
           >
-            <h3 style={{ margin: 0, fontSize: "16px" }}>My Patients</h3>
+            <h3 style={{ margin: 0, fontSize: 16 }}>My Patients</h3>
             <Link
               to="/doctor/patients"
               style={{
-                fontSize: "12px",
+                fontSize: 12,
                 color: "#0f66d1",
                 textDecoration: "none",
+                whiteSpace: "nowrap",
               }}
             >
               View all
@@ -221,13 +227,15 @@ export default function DoctorDashboard() {
                 key={p.id}
                 style={{
                   padding: "8px 10px",
-                  borderRadius: "10px",
+                  borderRadius: 10,
                   border: "1px solid #e5e7eb",
-                  marginBottom: "8px",
-                  fontSize: "12px",
+                  marginBottom: 8,
+                  fontSize: 12,
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
+                  gap: 8,
+                  flexWrap: "wrap",
                 }}
               >
                 <div>
@@ -240,11 +248,12 @@ export default function DoctorDashboard() {
                   to={`/doctor/patient/${p.id}`}
                   style={{
                     padding: "6px 10px",
-                    borderRadius: "999px",
+                    borderRadius: 999,
                     border: "1px solid #0f66d1",
                     color: "#0f66d1",
                     textDecoration: "none",
-                    fontSize: "11px",
+                    fontSize: 11,
+                    whiteSpace: "nowrap",
                   }}
                 >
                   View profile
@@ -254,6 +263,17 @@ export default function DoctorDashboard() {
           </ul>
         </div>
       </div>
+
+      {/* Small CSS helper for stacking bottom grid on mobile */}
+      <style>
+        {`
+          @media (max-width: 768px) {
+            .doctor-bottom-grid {
+              grid-template-columns: 1fr;
+            }
+          }
+        `}
+      </style>
     </div>
   );
 }

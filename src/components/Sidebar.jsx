@@ -1,3 +1,4 @@
+// src/components/Sidebar.jsx
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
@@ -17,7 +18,7 @@ export default function Sidebar() {
       { to: "/reports", label: "Reports" },
       { to: "/appointments", label: "Appointments" },
       { to: "/messages", label: "Messages" },
-      { to: "/complaints", label: "Complaints" }, // NEW
+      { to: "/complaints", label: "Complaints" },
     ];
   } else if (user.role === "doctor") {
     base = "/doctor";
@@ -26,6 +27,7 @@ export default function Sidebar() {
       { to: "/patients", label: "My Patients" },
       { to: "/appointments", label: "Appointments" },
       { to: "/profile", label: "My Profile" },
+      { to: "/messages", label: "Messages" },
     ];
   } else if (user.role === "admin") {
     base = "/admin";
@@ -41,9 +43,9 @@ export default function Sidebar() {
           <NavLink
             key={link.to}
             to={base + link.to}
-            style={({ isActive }) => ({
-              backgroundColor: isActive ? "#0ea5e9" : "transparent",
-            })}
+            className={({ isActive }) =>
+              isActive ? "sidebar-link sidebar-link-active" : "sidebar-link"
+            }
           >
             {link.label}
           </NavLink>

@@ -4,454 +4,327 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function PatientMessages() {
-  const { authFetch, user } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
 
-  // ?with=doctorId
-  const params = new URLSearchParams(location.search);
-  const withUserIdFromUrl = params.get("with");
+  // Appointments se aaya hua doctor info
+  const selectedDoctorId = location.state?.doctorId || null;
+  const selectedDoctorName = location.state?.doctorName || "Select a doctor";
 
-  const [threads, setThreads] = useState([]); // { userId, name, role, email, lastMessage, lastMessageAt, unreadCount }
-  const [selectedUserId, setSelectedUserId] = useState(null);
-  const [selectedUserInfo, setSelectedUserInfo] = useState(null);
+  // Left side doctors (simple static list + selected doctor)
+  const BASE_DOCTORS = [
+    { id: "dr_sharma_cardio", name: "Dr. Rajesh Sharma" },
+    { id: "dr_verma_neuro", name: "Dr. Neha Verma" },
+    { id: "dr_singh_ortho", name: "Dr. Amit Singh" },
+    { id: "dr_khan_pedia", name: "Dr. Sana Khan" },
+  ];
 
-  const [messages, setMessages] = useState([]);
-  const [loadingThreads, setLoadingThreads] = useState(true);
-  const [loadingMessages, setLoadingMessages] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [newMessage, setNewMessage] = useState("");
-  const [error, setError] = useState("");
-
-  const loadThreads = async () => {
-    setLoadingThreads(true);
-    setError("");
-    try {
-      const res = await authFetch("http://localhost:5000/api/messages/threads");
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to load conversations");
-      }
-
-      // Sirf doctor threads dikhana (optional, clean)
-      const doctorThreads = data.filter((t) => t.role === "doctor");
-      setThreads(doctorThreads);
-
-      const baseList = doctorThreads;
-
-      if (withUserIdFromUrl) {
-        // try exact match
-        let target =
-          baseList.find((t) => t.userId === withUserIdFromUrl) ||
-          baseList.find((t) => t.userId?._id === withUserIdFromUrl);
-
-        if (target) {
-          setSelectedUserId(target.userId);
-          setSelectedUserInfo(target);
-        } else if (!selectedUserId && baseList.length > 0) {
-          // threads hain but specific doctor ka nahi mila
-          setSelectedUserId(baseList[0].userId);
-          setSelectedUserInfo(baseList[0]);
-        } else {
-          // koi thread hi nahi, lekin URL se doctorId aya hai – fallback info
-          setSelectedUserId(withUserIdFromUrl);
-          setSelectedUserInfo({
-            userId: withUserIdFromUrl,
-            name: "Doctor",
-            role: "doctor",
-            email: "",
-          });
-        }
-      } else if (!selectedUserId && baseList.length > 0) {
-        setSelectedUserId(baseList[0].userId);
-        setSelectedUserInfo(baseList[0]);
-      }
-
-      if (baseList.length === 0 && !withUserIdFromUrl) {
-        setSelectedUserId(null);
-        setSelectedUserInfo(null);
-        setMessages([]);
-      }
-    } catch (err) {
-      setError(err.message || "Failed to load conversations");
-    } finally {
-      setLoadingThreads(false);
+  // Unique doctors list, taki selectedDoctor bhi include ho jaye
+  const doctors = (() => {
+    const list = [...BASE_DOCTORS];
+    if (
+      selectedDoctorId &&
+      !list.some((d) => d.id === selectedDoctorId)
+    ) {
+      list.unshift({ id: selectedDoctorId, name: selectedDoctorName });
     }
-  };
+    return list;
+  })();
 
-  const loadMessages = async (otherUserId) => {
-    if (!otherUserId) return;
-    setLoadingMessages(true);
-    setError("");
-    try {
-      const res = await authFetch(
-        `http://localhost:5000/api/messages/conversation/${otherUserId}`
-      );
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to load messages");
-      }
-      setMessages(data);
+  const [activeDoctorId, setActiveDoctorId] = useState(selectedDoctorId);
+  const [activeDoctorName, setActiveDoctorName] = useState(selectedDoctorName);
 
-      await authFetch(
-        `http://localhost:5000/api/messages/read/${otherUserId}`,
-        {
-          method: "POST",
-        }
-      );
-
-      setThreads((prev) =>
-        prev.map((t) =>
-          t.userId === otherUserId ? { ...t, unreadCount: 0 } : t
-        )
-      );
-    } catch (err) {
-      // agar pehle kabhi chat nahi hui, yaha fail bhi ho sakta hai – tab bhi UI chale
-      setMessages([]);
-      // error ko soft rakho
-    } finally {
-      setLoadingMessages(false);
-    }
-  };
+  // Simple local messages per doctor (front‑end only)
+  const [messagesByDoctor, setMessagesByDoctor] = useState({});
+  const [input, setInput] = useState("");
 
   useEffect(() => {
-    loadThreads();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.search]);
+    if (selectedDoctorId) {
+      setActiveDoctorId(selectedDoctorId);
+      setActiveDoctorName(selectedDoctorName);
 
-  useEffect(() => {
-    if (selectedUserId) {
-      loadMessages(selectedUserId);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedUserId]);
-
-  const handleSelectThread = (thread) => {
-    setSelectedUserId(thread.userId);
-    setSelectedUserInfo(thread);
-  };
-
-  const handleSend = async () => {
-    if (!newMessage.trim() || !selectedUserId) return;
-    setSending(true);
-    setError("");
-
-    const text = newMessage.trim();
-    setNewMessage("");
-
-    try {
-      const res = await authFetch("http://localhost:5000/api/messages", {
-        method: "POST",
-        body: JSON.stringify({
-          recipient: selectedUserId,
-          text,
-        }),
+      // Agar us doctor ke लिए koi existing dummy messages nahi hain to seed karo
+      setMessagesByDoctor((prev) => {
+        if (prev[selectedDoctorId]) return prev;
+        return {
+          ...prev,
+          [selectedDoctorId]: [
+            {
+              id: "m1",
+              from: "doctor",
+              text: `Hello ${user?.name || "patient"}, how can I help you today?`,
+              at: "10:00 AM",
+            },
+          ],
+        };
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to send message");
-      }
-
-      setMessages((prev) => [...prev, data]);
-
-      setThreads((prev) =>
-        prev.map((t) =>
-          t.userId === selectedUserId
-            ? {
-                ...t,
-                lastMessage: data.text,
-                lastMessageAt: data.createdAt,
-              }
-            : t
-        )
-      );
-    } catch (err) {
-      setError(err.message || "Failed to send message");
-    } finally {
-      setSending(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDoctorId, selectedDoctorName]);
+
+  const currentMessages = activeDoctorId
+    ? messagesByDoctor[activeDoctorId] || []
+    : [];
+
+  const handleSend = (e) => {
+    e.preventDefault();
+    if (!activeDoctorId || !input.trim()) return;
+
+    const text = input.trim();
+    const time = new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    setMessagesByDoctor((prev) => {
+      const list = prev[activeDoctorId] || [];
+      return {
+        ...prev,
+        [activeDoctorId]: [
+          ...list,
+          {
+            id: `msg_${Date.now()}`,
+            from: "patient",
+            text,
+            at: time,
+          },
+        ],
+      };
+    });
+
+    setInput("");
   };
 
-  const selectedDisplayName = selectedUserInfo?.name || "selected user";
-
-  const renderMessageBubble = (m, index) => {
-    const currentUserId = user?.id;
-    const senderId =
-      typeof m.sender === "string" ? m.sender : m.sender?._id;
-
-    const fromMe = senderId === currentUserId;
-    const key = m._id || `${senderId}-${index}`;
-
-    return (
-      <div
-        key={key}
-        style={{
-          display: "flex",
-          justifyContent: fromMe ? "flex-end" : "flex-start",
-          marginBottom: "4px",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "75%",
-            padding: "6px 9px",
-            borderRadius: "12px",
-            background: fromMe
-              ? "linear-gradient(90deg,#0f66d1,#1d4ed8)"
-              : "white",
-            color: fromMe ? "white" : "#111827",
-            fontSize: "12px",
-            border: fromMe ? "none" : "1px solid #e5e7eb",
-          }}
-        >
-          {m.text}
-        </div>
-      </div>
-    );
+  const handleSelectDoctor = (doc) => {
+    setActiveDoctorId(doc.id);
+    setActiveDoctorName(doc.name);
+    // Ensure messages object me entry ho
+    setMessagesByDoctor((prev) => ({
+      ...prev,
+      [doc.id]: prev[doc.id] || [],
+    }));
   };
 
   return (
     <div>
       <h1 className="page-title">Messages</h1>
       <p className="page-subtitle">
-        Secure 1‑to‑1 chat between you and your doctors/admin.
-        {withUserIdFromUrl && (
-          <> You opened this chat from an appointment.</>
-        )}
+        Chat with your doctors about your appointments and follow-ups.
       </p>
-
-      {error && (
-        <p style={{ color: "#b91c1c", fontSize: "13px", marginBottom: "6px" }}>
-          {error}
-        </p>
-      )}
 
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "1.1fr 2fr",
-          gap: "14px",
-          minHeight: "320px",
+          display: "flex",
+          gap: 12,
+          height: 400,
+          borderRadius: 12,
+          border: "1px solid #e5e7eb",
+          overflow: "hidden",
+          background: "white",
         }}
       >
-        {/* LEFT – threads list */}
-        <div className="section">
+        {/* LEFT: Doctor list */}
+        <div
+          style={{
+            width: 220,
+            borderRight: "1px solid #e5e7eb",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           <div
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              marginBottom: "8px",
-              alignItems: "center",
+              padding: "8px 10px",
+              borderBottom: "1px solid #e5e7eb",
+              fontSize: 12,
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.04em",
+              color: "#6b7280",
             }}
           >
-            <h3 style={{ marginTop: 0, marginBottom: 0, fontSize: "15px" }}>
-              Conversations
-            </h3>
-            <button
-              onClick={loadThreads}
-              style={{
-                fontSize: "11px",
-                borderRadius: 999,
-                border: "1px solid #d1d5db",
-                padding: "4px 8px",
-                background: "white",
-                cursor: "pointer",
-              }}
-            >
-              Refresh
-            </button>
+            Doctors
           </div>
-
-          {loadingThreads ? (
-            <p style={{ fontSize: "12px", color: "#6b7280" }}>Loading...</p>
-          ) : threads.length === 0 ? (
-            <p style={{ fontSize: "12px", color: "#6b7280" }}>
-              No conversations yet. You can message a doctor from your
-              appointments or profile.
-            </p>
-          ) : (
-            <ul
-              style={{
-                listStyle: "none",
-                padding: 0,
-                margin: 0,
-                maxHeight: "320px",
-                overflowY: "auto",
-              }}
-            >
-              {threads.map((t) => (
-                <li
-                  key={t.userId}
-                  onClick={() => handleSelectThread(t)}
+          <div
+            style={{
+              flex: 1,
+              overflowY: "auto",
+            }}
+          >
+            {doctors.map((doc) => (
+              <button
+                key={doc.id}
+                type="button"
+                onClick={() => handleSelectDoctor(doc)}
+                style={{
+                  width: "100%",
+                  textAlign: "left",
+                  padding: "8px 10px",
+                  border: "none",
+                  borderBottom: "1px solid #f3f4f6",
+                  backgroundColor:
+                    activeDoctorId === doc.id ? "#eff6ff" : "white",
+                  fontSize: 12,
+                  cursor: "pointer",
+                }}
+              >
+                <div style={{ fontWeight: 600 }}>{doc.name}</div>
+                <div
                   style={{
-                    padding: "8px 10px",
-                    borderRadius: "10px",
-                    border:
-                      selectedUserId === t.userId
-                        ? "1px solid #0f66d1"
-                        : "1px solid #e5e7eb",
-                    marginBottom: "6px",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                    background:
-                      selectedUserId === t.userId ? "#eff6ff" : "white",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    gap: 8,
+                    fontSize: 11,
+                    color: "#6b7280",
+                    marginTop: 2,
                   }}
                 >
-                  <div>
-                    <div style={{ fontWeight: 500 }}>{t.name}</div>
-                    <div style={{ color: "#6b7280" }}>{t.role}</div>
-                    <div
-                      style={{
-                        color: "#9ca3af",
-                        fontSize: "11px",
-                        marginTop: "2px",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        maxWidth: "180px",
-                      }}
-                    >
-                      {t.lastMessage}
-                    </div>
-                  </div>
-                  {t.unreadCount > 0 && (
-                    <span
-                      style={{
-                        minWidth: 18,
-                        height: 18,
-                        borderRadius: 999,
-                        background: "#0f766e",
-                        color: "white",
-                        fontSize: "11px",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      {t.unreadCount}
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
+                  Tap to chat
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* RIGHT – chat with selected user */}
-        <div className="section">
-          {!selectedUserId ? (
-            <p style={{ fontSize: "12px", color: "#6b7280" }}>
-              Select a conversation from the left to start chatting.
-            </p>
-          ) : (
-            <>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "8px",
-                  alignItems: "center",
-                }}
-              >
-                <div>
-                  <h3
-                    style={{
-                      margin: 0,
-                      fontSize: "15px",
-                    }}
-                  >
-                    Chat with {selectedDisplayName}
-                  </h3>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: "11px",
-                      color: "#6b7280",
-                    }}
-                  >
-                    {selectedUserInfo?.role}{" "}
-                    {selectedUserInfo?.email
-                      ? `· ${selectedUserInfo.email}`
-                      : ""}
-                  </p>
-                </div>
+        {/* RIGHT: Chat area */}
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* Chat header */}
+          <div
+            style={{
+              padding: "8px 12px",
+              borderBottom: "1px solid #e5e7eb",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              fontSize: 12,
+            }}
+          >
+            <div>
+              <div style={{ fontWeight: 600 }}>
+                {activeDoctorId ? activeDoctorName : "Select a doctor"}
               </div>
-
-              <div
-                style={{
-                  height: "220px",
-                  borderRadius: "10px",
-                  border: "1px solid #e5e7eb",
-                  padding: "8px",
-                  fontSize: "12px",
-                  marginBottom: "8px",
-                  overflowY: "auto",
-                  background: "#f9fafb",
-                }}
-              >
-                {loadingMessages ? (
-                  <p
-                    style={{
-                      fontSize: "12px",
-                      color: "#9ca3af",
-                      textAlign: "center",
-                      marginTop: "20px",
-                    }}
-                  >
-                    Loading messages...
-                  </p>
-                ) : messages.length === 0 ? (
-                  <p
-                    style={{
-                      fontSize: "12px",
-                      color: "#9ca3af",
-                      textAlign: "center",
-                      marginTop: "20px",
-                    }}
-                  >
-                    No messages yet in this conversation. Start a chat.
-                  </p>
-                ) : (
-                  messages.map((m, i) => renderMessageBubble(m, i))
-                )}
+              <div style={{ fontSize: 11, color: "#6b7280" }}>
+                {activeDoctorId
+                  ? "Secure chat about your appointments"
+                  : "Choose a doctor from the left to start chat"}
               </div>
+            </div>
+          </div>
 
-              <div style={{ display: "flex", gap: "6px" }}>
-                <input
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder={`Message ${selectedDisplayName}...`}
+          {/* Messages list */}
+          <div
+            style={{
+              flex: 1,
+              padding: "8px 12px",
+              overflowY: "auto",
+              background: "#f9fafb",
+            }}
+          >
+            {!activeDoctorId ? (
+              <p style={{ fontSize: 12, color: "#9ca3af" }}>
+                No doctor selected. Choose a doctor from the left panel to
+                start messaging.
+              </p>
+            ) : currentMessages.length === 0 ? (
+              <p style={{ fontSize: 12, color: "#9ca3af" }}>
+                No messages yet. Say hello to {activeDoctorName}.
+              </p>
+            ) : (
+              currentMessages.map((m) => (
+                <div
+                  key={m.id}
                   style={{
-                    flex: 1,
-                    borderRadius: "999px",
-                    border: "1px solid #d1d5db",
-                    padding: "8px 10px",
-                    fontSize: "12px",
-                  }}
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={sending || !selectedUserId}
-                  style={{
-                    padding: "8px 14px",
-                    borderRadius: "999px",
-                    border: "none",
-                    background: sending
-                      ? "#9ca3af"
-                      : "linear-gradient(90deg,#0f66d1,#1d4ed8)",
-                    color: "white",
-                    fontSize: "12px",
-                    cursor: sending ? "not-allowed" : "pointer",
+                    display: "flex",
+                    justifyContent:
+                      m.from === "patient" ? "flex-end" : "flex-start",
+                    marginBottom: 6,
                   }}
                 >
-                  {sending ? "Sending..." : "Send"}
-                </button>
-              </div>
-            </>
-          )}
+                  <div
+                    style={{
+                      maxWidth: "70%",
+                      padding: "6px 8px",
+                      borderRadius: 10,
+                      fontSize: 12,
+                      backgroundColor:
+                        m.from === "patient" ? "#2563eb" : "white",
+                      color: m.from === "patient" ? "white" : "#111827",
+                      border:
+                        m.from === "patient"
+                          ? "none"
+                          : "1px solid #e5e7eb",
+                    }}
+                  >
+                    <div style={{ marginBottom: 2 }}>{m.text}</div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        opacity: 0.7,
+                        textAlign: "right",
+                      }}
+                    >
+                      {m.at}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Input box */}
+          <form
+            onSubmit={handleSend}
+            style={{
+              padding: "6px 8px",
+              borderTop: "1px solid #e5e7eb",
+              display: "flex",
+              gap: 6,
+            }}
+          >
+            <input
+              type="text"
+              placeholder={
+                activeDoctorId
+                  ? `Message ${activeDoctorName}...`
+                  : "Select a doctor to start chatting"
+              }
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              disabled={!activeDoctorId}
+              style={{
+                flex: 1,
+                borderRadius: 999,
+                border: "1px solid #d1d5db",
+                padding: "6px 10px",
+                fontSize: 12,
+                backgroundColor: activeDoctorId ? "white" : "#f3f4f6",
+              }}
+            />
+            <button
+              type="submit"
+              disabled={!activeDoctorId || !input.trim()}
+              style={{
+                padding: "6px 14px",
+                borderRadius: 999,
+                border: "none",
+                background:
+                  !activeDoctorId || !input.trim()
+                    ? "#9ca3af"
+                    : "linear-gradient(90deg,#0f66d1,#1d4ed8)",
+                color: "white",
+                fontSize: 12,
+                cursor:
+                  !activeDoctorId || !input.trim()
+                    ? "not-allowed"
+                    : "pointer",
+              }}
+            >
+              Send
+            </button>
+          </form>
         </div>
       </div>
     </div>
