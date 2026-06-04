@@ -1,3 +1,4 @@
+// src/pages/Home.jsx (ya jahan bhi tumhara Home component hai)
 import { Link } from "react-router-dom";
 
 export default function Home() {
@@ -8,11 +9,11 @@ export default function Home() {
         display: "flex",
         flexDirection: "column",
         color: "white",
-        backgroundImage: 'url("/public/bg.png")',
+        // IMPORTANT: /public hata diya, direct root se path
+        backgroundImage: 'url("/bg.png")',
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
-        // thoda dark overlay effect ke liye:
         backdropFilter: "brightness(0.9)",
       }}
     >
@@ -43,9 +44,7 @@ export default function Home() {
           </div>
           <div>
             <div style={{ fontWeight: "700", fontSize: "18px" }}>Sun-fibo</div>
-            <div style={{ fontSize: "11px", opacity: 0.8 }}>
-             Technology
-            </div>
+            <div style={{ fontSize: "11px", opacity: 0.8 }}>Technology</div>
           </div>
         </div>
 
@@ -169,12 +168,12 @@ export default function Home() {
               background: "white",
             }}
           >
-            {/* yahan tum hospital/doctor wali image use kar sakte ho */}
+            {/* Hospital/doctor image */}
             <div
               style={{
                 height: "200px",
-                backgroundImage:
-                 'url("/public/doctor.png")',
+                // IMPORTANT: yahan bhi /public nahi, direct root path
+                backgroundImage: 'url("/doctor.png")',
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}
@@ -198,7 +197,7 @@ export default function Home() {
                   marginBottom: "8px",
                 }}
               >
-                Patients can view their health summary, Lab reports and
+                Patients can view their health summary, lab reports and
                 prescriptions. Doctors can track medical history and plans.
               </p>
               <div
