@@ -8,7 +8,7 @@ export default function Home() {
         display: "flex",
         flexDirection: "column",
         color: "white",
-        backgroundImage: 'url("/src/assets/bg.png")',
+        backgroundImage: 'url("/public/bg.png")',
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
@@ -174,7 +174,7 @@ export default function Home() {
               style={{
                 height: "200px",
                 backgroundImage:
-                 'url("/src/assets/doctor.png")',
+                 'url("/public/doctor.png")',
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}
