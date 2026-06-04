@@ -3,8 +3,11 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 const AuthContext = createContext(null);
 
-// Adjust if backend URL/port different ho
-const API_BASE_URL = "http://localhost:5000/api/auth";
+// Backend base URL
+// Pehle env se lega, nahi mila to Render ka URL use karega
+const API_ROOT =
+  import.meta.env.VITE_API_ROOT || "https://ppms-server-3.onrender.com";
+const API_BASE_URL = `${API_ROOT}/api/auth`;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);   // { id, name, email, role }
@@ -77,7 +80,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("ppms_token");
   };
 
-  // ✅ authorized fetch – JSON + FormData (file upload) dono handle karega
+  // Authorized fetch – JSON + FormData (file upload) dono handle karega
   const authFetch = async (url, options = {}) => {
     const finalOptions = { ...options };
     const headers = {
