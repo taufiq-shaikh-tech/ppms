@@ -20,8 +20,7 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 5000;
-const MONGODB_URI =
-  process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/ppms";
+const MONGODB_URI = process.env.MONGODB_URI; // ✅ sirf env se lo
 
 // __dirname for ES modules (points to src/)
 const __filename = fileURLToPath(import.meta.url);
@@ -31,10 +30,18 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.join(__dirname, "..");
 
 // Mongo connect
+if (!MONGODB_URI) {
+  console.error("MONGODB_URI is not defined");
+  process.exit(1);
+}
+
 mongoose
   .connect(MONGODB_URI)
   .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("Mongo error", err));
+  .catch((err) => {
+    console.error("Mongo error", err);
+    process.exit(1);
+  });
 
 // API routes
 app.use("/api/auth", authRoutes);
@@ -44,10 +51,7 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/reports", reportRoutes);
 
 // Static serve for uploaded files (reports, etc.)
-app.use(
-  "/uploads",
-  express.static(path.join(rootDir, "uploads"))
-);
+app.use("/uploads", express.static(path.join(rootDir, "uploads")));
 
 // Health check
 app.get("/", (req, res) => {
